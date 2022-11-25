@@ -172,7 +172,7 @@ final class MainViewController: AVPlayerViewController {
     private func setInitialState() {
         let hasVideo = presenter.currentVideo != nil
         filterBtnsStack.isUserInteractionEnabled = hasVideo
-        bottomControlsStack.isHidden = hasVideo
+        bottomControlsStack.isHidden = !hasVideo
     }
     
     private func makeVoiceFilterButton(for voiceFilter: VoiceFilter) -> UIButton {
@@ -311,17 +311,5 @@ extension VoiceFilter {
         case .none:
             return UIImage(systemName: "clear", withConfiguration: config)
         }
-    }
-}
-
-extension UIImage.SymbolConfiguration {
-    static var medium: UIImage.SymbolConfiguration {
-        .init(pointSize: 50, weight: .light, scale: .medium)
-    }
-}
-
-extension UIControl {
-    func addAction(for controlEvents: UIControl.Event = .touchUpInside, _ closure: @escaping()->()) {
-        addAction(UIAction { (action: UIAction) in closure() }, for: controlEvents)
     }
 }

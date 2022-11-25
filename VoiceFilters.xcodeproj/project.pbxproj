@@ -9,21 +9,23 @@
 /* Begin PBXBuildFile section */
 		0DC45E88292E4007000C366A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC45E87292E4007000C366A /* AppDelegate.swift */; };
 		0DC45E8A292E4007000C366A /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC45E89292E4007000C366A /* SceneDelegate.swift */; };
-		0DC45E8C292E4007000C366A /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC45E8B292E4007000C366A /* ViewController.swift */; };
-		0DC45E8F292E4007000C366A /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 0DC45E8D292E4007000C366A /* Main.storyboard */; };
+		0DC45E8C292E4007000C366A /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC45E8B292E4007000C366A /* MainViewController.swift */; };
 		0DC45E91292E4009000C366A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0DC45E90292E4009000C366A /* Assets.xcassets */; };
 		0DC45E94292E4009000C366A /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 0DC45E92292E4009000C366A /* LaunchScreen.storyboard */; };
+		0DC45E9E292E4225000C366A /* AVService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC45E9D292E4225000C366A /* AVService.swift */; };
+		0DC45EA0292E5D49000C366A /* MainViewPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC45E9F292E5D49000C366A /* MainViewPresenter.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		0DC45E84292E4007000C366A /* VoiceFilters.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VoiceFilters.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0DC45E87292E4007000C366A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		0DC45E89292E4007000C366A /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
-		0DC45E8B292E4007000C366A /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
-		0DC45E8E292E4007000C366A /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		0DC45E8B292E4007000C366A /* MainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewController.swift; sourceTree = "<group>"; };
 		0DC45E90292E4009000C366A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		0DC45E93292E4009000C366A /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		0DC45E95292E4009000C366A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		0DC45E9D292E4225000C366A /* AVService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AVService.swift; sourceTree = "<group>"; };
+		0DC45E9F292E5D49000C366A /* MainViewPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewPresenter.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -56,15 +58,32 @@
 		0DC45E86292E4007000C366A /* VoiceFilters */ = {
 			isa = PBXGroup;
 			children = (
+				0DC45E9F292E5D49000C366A /* MainViewPresenter.swift */,
+				0DC45E9B292E414F000C366A /* Common */,
+				0DC45E8B292E4007000C366A /* MainViewController.swift */,
+				0DC45E9C292E41FA000C366A /* AV Service */,
+			);
+			path = VoiceFilters;
+			sourceTree = "<group>";
+		};
+		0DC45E9B292E414F000C366A /* Common */ = {
+			isa = PBXGroup;
+			children = (
 				0DC45E87292E4007000C366A /* AppDelegate.swift */,
 				0DC45E89292E4007000C366A /* SceneDelegate.swift */,
-				0DC45E8B292E4007000C366A /* ViewController.swift */,
-				0DC45E8D292E4007000C366A /* Main.storyboard */,
 				0DC45E90292E4009000C366A /* Assets.xcassets */,
 				0DC45E92292E4009000C366A /* LaunchScreen.storyboard */,
 				0DC45E95292E4009000C366A /* Info.plist */,
 			);
-			path = VoiceFilters;
+			path = Common;
+			sourceTree = "<group>";
+		};
+		0DC45E9C292E41FA000C366A /* AV Service */ = {
+			isa = PBXGroup;
+			children = (
+				0DC45E9D292E4225000C366A /* AVService.swift */,
+			);
+			path = "AV Service";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -127,7 +146,6 @@
 			files = (
 				0DC45E94292E4009000C366A /* LaunchScreen.storyboard in Resources */,
 				0DC45E91292E4009000C366A /* Assets.xcassets in Resources */,
-				0DC45E8F292E4007000C366A /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -138,8 +156,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0DC45E8C292E4007000C366A /* ViewController.swift in Sources */,
+				0DC45E8C292E4007000C366A /* MainViewController.swift in Sources */,
 				0DC45E88292E4007000C366A /* AppDelegate.swift in Sources */,
+				0DC45E9E292E4225000C366A /* AVService.swift in Sources */,
+				0DC45EA0292E5D49000C366A /* MainViewPresenter.swift in Sources */,
 				0DC45E8A292E4007000C366A /* SceneDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -147,14 +167,6 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXVariantGroup section */
-		0DC45E8D292E4007000C366A /* Main.storyboard */ = {
-			isa = PBXVariantGroup;
-			children = (
-				0DC45E8E292E4007000C366A /* Base */,
-			);
-			name = Main.storyboard;
-			sourceTree = "<group>";
-		};
 		0DC45E92292E4009000C366A /* LaunchScreen.storyboard */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -216,7 +228,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -270,7 +282,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
@@ -289,12 +301,14 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 3P9KGAPYFK;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = VoiceFilters/Info.plist;
+				INFOPLIST_FILE = VoiceFilters/Common/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "This app records videos";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app records audio";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "This app use your photo library.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UIMainStoryboardFile = Main;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -302,9 +316,12 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.alexPermiakov.VoiceFilters;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -317,12 +334,14 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 3P9KGAPYFK;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = VoiceFilters/Info.plist;
+				INFOPLIST_FILE = VoiceFilters/Common/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "This app records videos";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app records audio";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "This app use your photo library.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UIMainStoryboardFile = Main;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -330,9 +349,12 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.alexPermiakov.VoiceFilters;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};

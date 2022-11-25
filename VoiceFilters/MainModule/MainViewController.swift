@@ -12,10 +12,11 @@ import UIKit
 final class MainViewController: AVPlayerViewController {
     
     enum UIConstants {
-        static var layoutInset: CGFloat = 16
-        static var verticalSpacing: CGFloat = 24
-        static var horizontalSpacing: CGFloat = 32
-        
+        static let layoutInset: CGFloat = 16
+        static let verticalSpacing: CGFloat = 24
+        static let horizontalSpacing: CGFloat = 32
+        static let bottomStackInsets = UIEdgeInsets(top: 6, left: 12, bottom: 6, right: 12)
+        static let cornerRadius: CGFloat = 32
     }
     
     private var presenter: MainPresenterInput
@@ -37,7 +38,7 @@ final class MainViewController: AVPlayerViewController {
     }()
     
     private lazy var shareVideoBtn: UIButton = {
-        var button = makeButton(withImageName: "square.and.arrow.up.circle", tintColor: .lightGray)
+        var button = makeButton(withImageName: "square.and.arrow.up.circle", tintColor: .systemPurple)
         button.addAction {
             self.presenter.didTapShareVideo()
             self.activityIndicator.startAnimating()
@@ -55,7 +56,6 @@ final class MainViewController: AVPlayerViewController {
     
     private lazy var loopBtn: UIButton = {
         var button = makeButton(withImageName: "infinity.circle", tintColor: .systemRed, selectedImage: "infinity.circle.fill")
-        button.isSelected = self.presenter.isLooped
         button.addAction {
             self.presenter.tappedLoopBtn()
             button.isSelected = self.presenter.isLooped
@@ -81,6 +81,10 @@ final class MainViewController: AVPlayerViewController {
         let stackView = UIStackView()
         stackView.axis = .horizontal
         stackView.spacing = UIConstants.horizontalSpacing
+        stackView.backgroundColor = .white.withAlphaComponent(0.5)
+        stackView.layoutMargins = UIConstants.bottomStackInsets
+        stackView.layer.cornerRadius = UIConstants.cornerRadius
+        stackView.isLayoutMarginsRelativeArrangement = true
         return stackView
     }()
     
@@ -129,82 +133,11 @@ final class MainViewController: AVPlayerViewController {
             .forEach { view.bringSubviewToFront($0) }
     }
     
-    private func setupViews() {
-        showsPlaybackControls = false
-        activityIndicator.color = .white
-        
-        [filterBtnsStack, pickerBtnsStack, bottomControlsStack, activityIndicator]
-            .forEach {
-                view.addSubview($0)
-                $0.translatesAutoresizingMaskIntoConstraints = false
-            }
-        
-        let filters = VoiceFilter.allCases
-        filters.forEach { filter in
-            let button = makeVoiceFilterButton(for: filter)
-            filterButtons[filter] = button
-            filterBtnsStack.addArrangedSubview(button)
-        }
-        
-        pickerBtnsStack.addArrangedSubview(recordVideoBtn)
-        pickerBtnsStack.addArrangedSubview(pickVideoBtn)
-        
-        bottomControlsStack.addArrangedSubview(resetVideoBtn)
-        bottomControlsStack.addArrangedSubview(shareVideoBtn)
-        bottomControlsStack.addArrangedSubview(loopBtn)
-        
-        NSLayoutConstraint.activate([
-            filterBtnsStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: UIConstants.layoutInset),
-            filterBtnsStack.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            
-            pickerBtnsStack.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -UIConstants.layoutInset),
-            pickerBtnsStack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            
-            bottomControlsStack.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -UIConstants.layoutInset),
-            bottomControlsStack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            
-            activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            activityIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor)
-        ])
-    }
-    
     private func setInitialState() {
         let hasVideo = presenter.currentVideo != nil
         filterBtnsStack.isUserInteractionEnabled = hasVideo
         bottomControlsStack.isHidden = !hasVideo
-    }
-    
-    private func makeVoiceFilterButton(for voiceFilter: VoiceFilter) -> UIButton {
-        let button = UIButton()
-        button.setImage(voiceFilter.image, for: .normal)
-        button.setImage(voiceFilter.selectedImage, for: .selected)
-        button.tintColor = .systemMint
-        button.addAction { [weak self] in
-            self?.didSelect(voiceFilter: voiceFilter)
-        }
-        return button
-    }
-    
-    private func didSelect(voiceFilter: VoiceFilter) {
-        presenter.selectedFilter = voiceFilter
-        updateFilterBtns()
-    }
-    
-    private func updateFilterBtns() {
-        filterButtons.forEach { $1.isSelected = $0 == presenter.selectedFilter }
-    }
-    
-    private func makeButton(withImageName image: String, tintColor: UIColor, selectedImage: String? = nil) -> UIButton {
-        let button = UIButton()
-        let mediumConfig = UIImage.SymbolConfiguration.medium
-        let mediumImage = UIImage(systemName: image, withConfiguration: mediumConfig)
-        button.setImage(mediumImage, for: .normal)
-        if let selectedImage = selectedImage {
-            let mediumSelectedImage = UIImage(systemName: selectedImage, withConfiguration: mediumConfig)
-            button.setImage(mediumSelectedImage, for: .selected)
-        }
-        button.tintColor = tintColor
-        return button
+        loopBtn.isSelected = self.presenter.isLooped
     }
     
     private func shareWithActivityVC(url: URL) {
@@ -274,6 +207,81 @@ extension MainViewController: PresenterOutput {
     func shareVideo(with url: URL) {
         activityIndicator.stopAnimating()
         shareWithActivityVC(url: url)
+    }
+}
+
+// layout
+extension MainViewController {
+    private func setupViews() {
+        showsPlaybackControls = false
+        activityIndicator.color = .white
+        
+        [filterBtnsStack, pickerBtnsStack, bottomControlsStack, activityIndicator]
+            .forEach {
+                view.addSubview($0)
+                $0.translatesAutoresizingMaskIntoConstraints = false
+            }
+        
+        let filters = VoiceFilter.allCases
+        filters.forEach { filter in
+            let button = makeVoiceFilterButton(for: filter)
+            filterButtons[filter] = button
+            filterBtnsStack.addArrangedSubview(button)
+        }
+        
+        pickerBtnsStack.addArrangedSubview(recordVideoBtn)
+        pickerBtnsStack.addArrangedSubview(pickVideoBtn)
+        
+        bottomControlsStack.addArrangedSubview(resetVideoBtn)
+        bottomControlsStack.addArrangedSubview(shareVideoBtn)
+        bottomControlsStack.addArrangedSubview(loopBtn)
+        
+        NSLayoutConstraint.activate([
+            filterBtnsStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: UIConstants.layoutInset),
+            filterBtnsStack.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            
+            pickerBtnsStack.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -UIConstants.layoutInset),
+            pickerBtnsStack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            
+            bottomControlsStack.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -UIConstants.layoutInset),
+            bottomControlsStack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            
+            activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            activityIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+        ])
+    }
+    
+    private func makeVoiceFilterButton(for voiceFilter: VoiceFilter) -> UIButton {
+        let button = UIButton()
+        button.setImage(voiceFilter.image, for: .normal)
+        button.setImage(voiceFilter.selectedImage, for: .selected)
+        button.tintColor = .systemMint
+        button.addAction { [weak self] in
+            self?.didSelect(voiceFilter: voiceFilter)
+        }
+        return button
+    }
+    
+    private func didSelect(voiceFilter: VoiceFilter) {
+        presenter.selectedFilter = voiceFilter
+        updateFilterBtns()
+    }
+    
+    private func updateFilterBtns() {
+        filterButtons.forEach { $1.isSelected = $0 == presenter.selectedFilter }
+    }
+    
+    private func makeButton(withImageName image: String, tintColor: UIColor, selectedImage: String? = nil) -> UIButton {
+        let button = UIButton()
+        let mediumConfig = UIImage.SymbolConfiguration.medium
+        let mediumImage = UIImage(systemName: image, withConfiguration: mediumConfig)
+        button.setImage(mediumImage, for: .normal)
+        if let selectedImage = selectedImage {
+            let mediumSelectedImage = UIImage(systemName: selectedImage, withConfiguration: mediumConfig)
+            button.setImage(mediumSelectedImage, for: .selected)
+        }
+        button.tintColor = tintColor
+        return button
     }
 }
 

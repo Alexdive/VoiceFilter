@@ -16,6 +16,7 @@ final class MainViewController: AVPlayerViewController {
         static let verticalSpacing: CGFloat = 24
         static let horizontalSpacing: CGFloat = 32
         static let bottomStackInsets = UIEdgeInsets(top: 6, left: 12, bottom: 6, right: 12)
+        static let filtersStackInsets = UIEdgeInsets(top: 12, left: 4, bottom: 12, right: 4)
         static let cornerRadius: CGFloat = 32
     }
     
@@ -67,6 +68,10 @@ final class MainViewController: AVPlayerViewController {
         let stackView = UIStackView()
         stackView.axis = .vertical
         stackView.spacing = UIConstants.verticalSpacing
+        stackView.backgroundColor = .white.withAlphaComponent(0.5)
+        stackView.layoutMargins = UIConstants.filtersStackInsets
+        stackView.layer.cornerRadius = UIConstants.cornerRadius
+        stackView.isLayoutMarginsRelativeArrangement = true
         return stackView
     }()
     

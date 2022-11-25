@@ -6,7 +6,6 @@
 //
 
 import AVFoundation
-//import UIKit
 
 protocol AVServiceProtocol {
     var playVideo: ((URL) -> Void)? { get set }

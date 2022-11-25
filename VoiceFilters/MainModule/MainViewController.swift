@@ -18,7 +18,7 @@ final class MainViewController: AVPlayerViewController {
         
     }
     
-    private var presenter: MainViewPresenter
+    private var presenter: MainPresenterInput
     
     private lazy var recordVideoBtn: UIButton = {
         var button = makeButton(withImageName: "record.circle", tintColor: .systemRed)
@@ -40,7 +40,6 @@ final class MainViewController: AVPlayerViewController {
         var button = makeButton(withImageName: "square.and.arrow.up.circle", tintColor: .lightGray)
         button.addAction {
             self.presenter.didTapShareVideo()
-            self.player?.pause()
             self.activityIndicator.startAnimating()
         }
         return button

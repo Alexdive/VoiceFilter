@@ -6,14 +6,29 @@
 //
 
 import AVFoundation
-import UIKit
+//import UIKit
 
-final class AVService {
+protocol AVServiceProtocol {
+    var playVideo: ((URL) -> Void)? { get set }
+    var engine: AVAudioEngine? { get }
+    var audioPlayer: AVAudioPlayerNode? { get }
+    
+    func startPlayback(videoUrl: URL)
+    func prepareVideoForShare(videoUrl: URL, completion: @escaping (URL) -> Void)
+    func restart()
+    func resetEffects()
+    func applyLowPitchFilter()
+    func applyAlienFilter()
+    func applyHighPitchFilter()
+    func applyReverbFilter()
+}
+
+final class AVService: AVServiceProtocol {
     
     var playVideo: ((URL) -> Void)?
     
     // Assets
-    private(set) var editedVideoURL: URL?
+    private var editedVideoURL: URL?
     private var audioFile: AVAudioFile?
     private var extractedAudioUrl: URL?
     

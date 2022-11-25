@@ -19,10 +19,24 @@ protocol PresenterOutput: AnyObject {
     func updateViews(hasSelectedVideo: Bool)
 }
 
-final class MainViewPresenter {
+protocol MainPresenterInput {
+    var delegate: PresenterOutput? { get set }
+    var currentVideo: URL? { get }
+    var selectedFilter: VoiceFilter? { get set }
+    var isLooped: Bool { get }
+    
+    func tappedLoopBtn()
+    func replay()
+    func restart()
+    func didRecordVideo(_ url: URL)
+    func didSelectVideo(_ url: URL)
+    func didTapShareVideo()
+}
+
+final class MainViewPresenter: MainPresenterInput {
     
     weak var delegate: PresenterOutput?
-    private let avService: AVService
+    private var avService: AVServiceProtocol
     
     init(avService: AVService) {
         self.avService = avService
@@ -73,7 +87,7 @@ final class MainViewPresenter {
         }
     }
     
-    private(set) var isLooped = true {
+    private(set) var isLooped: Bool = true {
         didSet {
             let player = avService.audioPlayer
             if isLooped == true,
@@ -112,6 +126,7 @@ final class MainViewPresenter {
     
     func didTapShareVideo() {
         guard let currentVideo = currentVideo else { return }
+        delegate?.pause()
         avService.prepareVideoForShare(videoUrl: currentVideo) { [weak self] outputURL in
             self?.delegate?.shareVideo(with: outputURL)
         }

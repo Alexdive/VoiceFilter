@@ -7,83 +7,57 @@
 
 import UIKit
 
-enum VoiceFilter: CaseIterable {
-    case highPitch, lowPitch, alien, reverb, none
-}
-
 protocol PresenterOutput: AnyObject {
     func playVideo(with url: URL)
     func pause()
     func resume()
     func shareVideo(with url: URL)
-    func updateViews(hasSelectedVideo: Bool)
+    func updateViews(with state: PresentationState)
 }
 
 protocol MainPresenterInput {
+    var filtersDict: [FilterName: VoiceFilter] { get }
     var delegate: PresenterOutput? { get set }
-    var currentVideo: URL? { get }
-    var selectedFilter: VoiceFilter? { get set }
-    var isLooped: Bool { get }
+    var selectedFilter: FilterName? { get set }
     
+    func viewDidLoad()
+    func getFiltersNames() -> [FilterName]
     func tappedLoopBtn()
     func replay()
-    func restart()
+    func reset()
     func didRecordVideo(_ url: URL)
     func didSelectVideo(_ url: URL)
     func didTapShareVideo()
+    func updateFilter(_ filter: VoiceFilter)
+}
+
+struct PresentationState {
+    var filterBtnsStackIsUserInteractionEnabled = false
+    var bottomControlsStackIsHidden = true
+    var pickerBtnsStackIsHidden = false
+    var loopBtnIsSelected = true
+    
+    mutating func update(hasVideo: Bool) {
+        filterBtnsStackIsUserInteractionEnabled = hasVideo
+        bottomControlsStackIsHidden = !hasVideo
+        pickerBtnsStackIsHidden = hasVideo
+    }
 }
 
 final class MainViewPresenter: MainPresenterInput {
     
+    private let filters: [VoiceFilter] = [.highPitch, .lowPitch, .alien, .reverb, .none]
+    
+    private(set) lazy var filtersDict: [FilterName: VoiceFilter] = Dictionary(uniqueKeysWithValues: filters.map { ($0.name, $0) })
+    
     weak var delegate: PresenterOutput?
     private var avService: AVServiceProtocol
     
-    init(avService: AVService) {
-        self.avService = avService
-        self.avService.playVideo = { [weak self] url in
-            self?.delegate?.playVideo(with: url)
-            self?.selectedFilter = VoiceFilter.none
-            self?.delegate?.updateViews(hasSelectedVideo: true)
-        }
-        
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(appMovedToBackground),
-            name: UIApplication.willResignActiveNotification,
-            object: nil
-        )
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(appMovedToForeground),
-            name: UIApplication.willEnterForegroundNotification,
-            object: nil
-        )
-    }
+    var replayFilter: FilterName?
     
-    private(set) var currentVideo: URL? {
+    private var presentationState = PresentationState() {
         didSet {
-            delegate?.updateViews(hasSelectedVideo: currentVideo != nil)
-        }
-    }
-    
-    var selectedFilter: VoiceFilter? {
-        didSet {
-            guard let filter = selectedFilter,
-                  filter != oldValue else { return }
-            avService.resetEffects()
-            switch filter {
-            case .lowPitch:
-                avService.applyLowPitchFilter()
-            case .alien:
-                avService.applyAlienFilter()
-            case .highPitch:
-                avService.applyHighPitchFilter()
-            case .reverb:
-                avService.applyReverbFilter()
-            case .none:
-                selectedFilter = nil
-                return
-            }
+            delegate?.updateViews(with: presentationState)
         }
     }
     
@@ -94,7 +68,66 @@ final class MainViewPresenter: MainPresenterInput {
                player?.isPlaying == false {
                 replay()
             }
+            presentationState.loopBtnIsSelected = isLooped
         }
+    }
+    
+    private(set) var currentVideo: URL? {
+        didSet {
+            presentationState.update(hasVideo: currentVideo != nil)
+        }
+    }
+    
+    init(avService: AVService) {
+        self.avService = avService
+        self.avService.playVideo = { [weak self] url in
+            guard let self else { return }
+            self.delegate?.playVideo(with: url)
+            self.selectedFilter = FilterName.none
+            if self.isLooped == true {
+                self.selectedFilter = self.replayFilter
+            }
+        }
+        
+        setupNotificationObservers()
+    }
+    
+    var selectedFilter: FilterName? {
+        didSet {
+            guard let filterName = selectedFilter,
+                  let filter = filtersDict[filterName]
+            else { return }
+            avService.resetEffects()
+            
+            switch filter.name {
+            case .highPitch:
+                avService.applyHighPitchFilter(level: filter.level)
+            case .lowPitch:
+                avService.applyLowPitchFilter(level: filter.level)
+            case .alien:
+                avService.applyAlienFilter(level: filter.level)
+            case .reverb:
+                avService.applyReverbFilter(level: filter.level)
+            case .none:
+                selectedFilter = nil
+                return
+            default:
+                return
+            }
+        }
+    }
+    
+    func viewDidLoad() {
+        delegate?.updateViews(with: presentationState)
+    }
+    
+    func getFiltersNames() -> [FilterName] {
+        filters.map(\.name)
+    }
+    
+    func updateFilter(_ filter: VoiceFilter) {
+        filtersDict[filter.name] = filter
+        selectedFilter = filter.name
     }
     
     func tappedLoopBtn() {
@@ -102,14 +135,15 @@ final class MainViewPresenter: MainPresenterInput {
     }
     
     func replay() {
+        replayFilter = selectedFilter
         avService.audioPlayer?.stop()
         if let url = currentVideo, isLooped {
             avService.startPlayback(videoUrl: url)
         }
     }
     
-    func restart() {
-        selectedFilter = nil
+    func reset() {
+        selectedFilter = FilterName.none
         currentVideo = nil
         avService.restart()
     }
@@ -132,15 +166,20 @@ final class MainViewPresenter: MainPresenterInput {
         }
     }
     
-    @objc private func appMovedToBackground() {
-        delegate?.pause()
-        avService.engine?.pause()
-        avService.audioPlayer?.pause()
-    }
-    
-    @objc private func appMovedToForeground() {
-        delegate?.resume()
-        try? avService.engine?.start()
-        avService.audioPlayer?.play()
+    private func setupNotificationObservers() {
+        _ = NotificationCenter.default.addObserver(forName: UIApplication.willResignActiveNotification,
+                                                   object: nil,
+                                                   queue: .main) { [unowned self] _ in
+            self.delegate?.pause()
+            self.avService.engine?.pause()
+            self.avService.audioPlayer?.pause()
+        }
+        _ = NotificationCenter.default.addObserver(forName: UIApplication.willEnterForegroundNotification,
+                                                   object: nil,
+                                                   queue: .main) { [unowned self] _ in
+            self.delegate?.resume()
+            try? self.avService.engine?.start()
+            self.avService.audioPlayer?.play()
+        }
     }
 }

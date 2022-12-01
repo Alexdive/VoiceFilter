@@ -24,7 +24,7 @@ final class MainViewController: AVPlayerViewController {
     
     private lazy var recordVideoBtn: UIButton = {
         var button = makeButton(withImageName: "record.circle", tintColor: .systemRed)
-        button.addAction {
+        button.addAction { [unowned self] _ in
             self.presentPicker(for: .camera)
         }
         return button
@@ -32,7 +32,7 @@ final class MainViewController: AVPlayerViewController {
     
     private lazy var pickVideoBtn: UIButton = {
         var button = makeButton(withImageName: "folder", tintColor: .systemPurple)
-        button.addAction {
+        button.addAction { [unowned self] _ in
             self.presentPicker(for: .photoLibrary)
         }
         return button
@@ -40,7 +40,7 @@ final class MainViewController: AVPlayerViewController {
     
     private lazy var shareVideoBtn: UIButton = {
         var button = makeButton(withImageName: "square.and.arrow.up.circle", tintColor: .systemPurple)
-        button.addAction {
+        button.addAction { [unowned self] _ in
             self.presenter.didTapShareVideo()
             self.activityIndicator.startAnimating()
         }
@@ -49,17 +49,16 @@ final class MainViewController: AVPlayerViewController {
     
     private lazy var resetVideoBtn: UIButton = {
         var button = makeButton(withImageName: "arrow.uturn.backward.circle", tintColor: .systemRed)
-        button.addAction {
+        button.addAction { [unowned self] _ in
             self.reset()
         }
         return button
     }()
     
     private lazy var loopBtn: UIButton = {
-        var button = makeButton(withImageName: "infinity.circle", tintColor: .systemRed, selectedImage: "infinity.circle.fill")
-        button.addAction {
+        var button = makeButton(withImageName: "infinity.circle", tintColor: .systemPurple, selectedImage: "infinity.circle.fill")
+        button.addAction { [unowned self] _ in
             self.presenter.tappedLoopBtn()
-            button.isSelected = self.presenter.isLooped
         }
         return button
     }()
@@ -93,7 +92,7 @@ final class MainViewController: AVPlayerViewController {
         return stackView
     }()
     
-    private var filterButtons: [VoiceFilter: UIButton] = [:]
+    private var filterButtons: [FilterName: UIButton] = [:]
     
     private lazy var picker: UIImagePickerController = {
         let picker = UIImagePickerController()
@@ -104,6 +103,15 @@ final class MainViewController: AVPlayerViewController {
         picker.allowsEditing = true
         return picker
     }()
+    
+    private lazy var sliderContainer: UIView = {
+        let view = UIView()
+        view.backgroundColor = .white.withAlphaComponent(0.5)
+        view.layer.cornerRadius = 20
+        return view
+    }()
+    
+    private var slider: UISlider?
     
     private lazy var activityIndicator = UIActivityIndicatorView(style: .large)
     
@@ -119,30 +127,26 @@ final class MainViewController: AVPlayerViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupViews()
-        setInitialState()
+        setupGestureRecognizers()
+        setupNotifications()
         presenter.delegate = self
-        
-        _ = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime,
-                                                   object: self.player?.currentItem,
-                                                   queue: nil,
-                                                   using: { _ in
-            DispatchQueue.main.async {
-                self.presenter.replay()
-            }
-        })
     }
     
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         [filterBtnsStack, pickerBtnsStack, bottomControlsStack, activityIndicator]
             .forEach { view.bringSubviewToFront($0) }
+        presenter.viewDidLoad()
     }
     
-    private func setInitialState() {
-        let hasVideo = presenter.currentVideo != nil
-        filterBtnsStack.isUserInteractionEnabled = hasVideo
-        bottomControlsStack.isHidden = !hasVideo
-        loopBtn.isSelected = self.presenter.isLooped
+    private func presentPicker(for sourceType: UIImagePickerController.SourceType) {
+        picker.sourceType = sourceType
+        present(self.picker, animated: true, completion: nil)
+    }
+    
+    private func reset() {
+        self.presenter.reset()
+        self.player = nil
     }
     
     private func shareWithActivityVC(url: URL) {
@@ -153,15 +157,42 @@ final class MainViewController: AVPlayerViewController {
         }
     }
     
-    private func presentPicker(for sourceType: UIImagePickerController.SourceType) {
-        picker.sourceType = sourceType
-        present(self.picker, animated: true, completion: nil)
+    private func updateState(with state: PresentationState) {
+        filterBtnsStack.isUserInteractionEnabled = state.filterBtnsStackIsUserInteractionEnabled
+        bottomControlsStack.isHidden = state.bottomControlsStackIsHidden
+        pickerBtnsStack.isHidden = state.pickerBtnsStackIsHidden
+        loopBtn.isSelected = state.loopBtnIsSelected
     }
     
-    private func reset() {
-        self.presenter.restart()
-        self.player = nil
-        updateFilterBtns()
+    private func setupGestureRecognizers() {
+        let tap = UITapGestureRecognizer()
+        tap.addTarget { [unowned self] in
+            self.removeSliderContainerIfNeeded()
+        }
+        view.addGestureRecognizer(tap)
+        
+        filterButtons
+            .filter { $0.key != .none }
+            .forEach { filterName, button in
+                let longTap = UILongPressGestureRecognizer()
+                button.addGestureRecognizer(longTap)
+                longTap.addTarget() { [unowned self] in
+                    if longTap.state == .began {
+                        self.showSlider(filterName: filterName)
+                        self.didSelect(filterName: filterName)
+                    }
+                }
+            }
+    }
+    
+    private func setupNotifications() {
+        _ = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime,
+                                                   object: self.player?.currentItem,
+                                                   queue: nil) { _ in
+            DispatchQueue.main.async {
+                self.presenter.replay()
+            }
+        }
     }
 }
 
@@ -182,25 +213,23 @@ extension MainViewController: UIImagePickerControllerDelegate, UINavigationContr
     
     func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
         dismiss(animated: true) { [weak self] in
-            self?.presenter.restart()
+            self?.presenter.reset()
         }
     }
 }
 
 extension MainViewController: PresenterOutput {
+    func updateViews(with state: PresentationState) {
+        updateState(with: state)
+        updateFilterBtns()
+    }
+    
     func pause() {
         player?.pause()
     }
     
     func resume() {
         player?.play()
-    }
-    
-    func updateViews(hasSelectedVideo: Bool) {
-        pickerBtnsStack.isHidden = hasSelectedVideo
-        bottomControlsStack.isHidden = !hasSelectedVideo
-        filterBtnsStack.isUserInteractionEnabled = hasSelectedVideo
-        updateFilterBtns()
     }
     
     func playVideo(with url: URL) {
@@ -220,6 +249,7 @@ extension MainViewController {
     private func setupViews() {
         showsPlaybackControls = false
         activityIndicator.color = .white
+        view.backgroundColor = .darkGray
         
         [filterBtnsStack, pickerBtnsStack, bottomControlsStack, activityIndicator]
             .forEach {
@@ -227,7 +257,7 @@ extension MainViewController {
                 $0.translatesAutoresizingMaskIntoConstraints = false
             }
         
-        let filters = VoiceFilter.allCases
+        let filters = presenter.getFiltersNames()
         filters.forEach { filter in
             let button = makeVoiceFilterButton(for: filter)
             filterButtons[filter] = button
@@ -256,24 +286,76 @@ extension MainViewController {
         ])
     }
     
-    private func makeVoiceFilterButton(for voiceFilter: VoiceFilter) -> UIButton {
-        let button = UIButton()
-        button.setImage(voiceFilter.image, for: .normal)
-        button.setImage(voiceFilter.selectedImage, for: .selected)
-        button.tintColor = .systemMint
-        button.addAction { [weak self] in
-            self?.didSelect(voiceFilter: voiceFilter)
+    private func removeSliderContainerIfNeeded() {
+        if sliderContainer.isDescendant(of: view) {
+            sliderContainer.subviews.forEach { $0.removeFromSuperview() }
+            slider = nil
+            sliderContainer.removeFromSuperview()
+            sliderContainer.removeAllConstraints()
         }
-        return button
     }
     
-    private func didSelect(voiceFilter: VoiceFilter) {
-        presenter.selectedFilter = voiceFilter
+    private func layoutSliderContainer(with button: UIButton) {
+        view.addSubview(sliderContainer)
+        sliderContainer.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            sliderContainer.leadingAnchor.constraint(equalTo: button.trailingAnchor, constant: 20),
+            sliderContainer.centerYAnchor.constraint(equalTo: button.centerYAnchor),
+            sliderContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            sliderContainer.heightAnchor.constraint(equalTo: button.heightAnchor, multiplier: 0.8)
+        ])
+        view.layoutIfNeeded()
+    }
+    
+    private func showSlider(filterName: FilterName) {
+        guard let button = filterButtons[filterName],
+              var filter = presenter.filtersDict[filterName] else { return }
+        
+        removeSliderContainerIfNeeded()
+        layoutSliderContainer(with: button)
+        
+        slider = makeSlider()
+        guard let slider else { return }
+        slider.value = filter.level
+        
+        slider.addAction(for: .valueChanged) { [unowned self] _ in
+            filter.level = slider.value
+            presenter.updateFilter(filter)
+        }
+        
+        sliderContainer.addSubview(slider)
+        slider.frame = .init(origin: .init(x: sliderContainer.bounds.minX + 10,
+                                           y: sliderContainer.bounds.minY),
+                             size: .init(width: sliderContainer.bounds.width - 20,
+                                         height: sliderContainer.bounds.height))
+    }
+    
+    private func didSelect(filterName: FilterName) {
+        presenter.selectedFilter = filterName
         updateFilterBtns()
+        if sliderContainer.isDescendant(of: view) {
+            if filterName != .none {
+                showSlider(filterName: filterName)
+            } else {
+                removeSliderContainerIfNeeded()
+            }
+        }
     }
     
     private func updateFilterBtns() {
         filterButtons.forEach { $1.isSelected = $0 == presenter.selectedFilter }
+    }
+    
+    private func makeVoiceFilterButton(for filterName: FilterName) -> UIButton {
+        let button = UIButton()
+        let voiceFilter = presenter.filtersDict[filterName] ?? .none
+        button.setImage(voiceFilter.image, for: .normal)
+        button.setImage(voiceFilter.selectedImage, for: .selected)
+        button.tintColor = .systemMint
+        button.addAction { [unowned self] _ in
+            self.didSelect(filterName: filterName)
+        }
+        return button
     }
     
     private func makeButton(withImageName image: String, tintColor: UIColor, selectedImage: String? = nil) -> UIButton {
@@ -281,47 +363,21 @@ extension MainViewController {
         let mediumConfig = UIImage.SymbolConfiguration.medium
         let mediumImage = UIImage(systemName: image, withConfiguration: mediumConfig)
         button.setImage(mediumImage, for: .normal)
-        if let selectedImage = selectedImage {
+        if let selectedImage {
             let mediumSelectedImage = UIImage(systemName: selectedImage, withConfiguration: mediumConfig)
             button.setImage(mediumSelectedImage, for: .selected)
         }
         button.tintColor = tintColor
         return button
     }
-}
-
-extension VoiceFilter {
-    var config: UIImage.SymbolConfiguration {
-        UIImage.SymbolConfiguration.medium
-    }
     
-    var image: UIImage? {
-        switch self {
-        case .highPitch:
-            return UIImage(systemName: "arrow.up.circle", withConfiguration: config)
-        case .lowPitch:
-            return UIImage(systemName: "arrow.down.circle", withConfiguration: config)
-        case .alien:
-            return UIImage(systemName: "bubbles.and.sparkles", withConfiguration: config)
-        case .reverb:
-            return UIImage(systemName: "building.columns.circle", withConfiguration: config)
-        case .none:
-            return UIImage(systemName: "clear", withConfiguration: config)
-        }
-    }
-    
-    var selectedImage: UIImage? {
-        switch self {
-        case .highPitch:
-            return UIImage(systemName: "arrow.up.circle.fill", withConfiguration: config)
-        case .lowPitch:
-            return UIImage(systemName: "arrow.down.circle.fill", withConfiguration: config)
-        case .alien:
-            return UIImage(systemName: "bubbles.and.sparkles.fill", withConfiguration: config)
-        case .reverb:
-            return UIImage(systemName: "building.columns.circle.fill", withConfiguration: config)
-        case .none:
-            return UIImage(systemName: "clear", withConfiguration: config)
-        }
+    private func makeSlider() -> UISlider {
+        let slider = UISlider()
+        slider.minimumValue = 0
+        slider.maximumValue = 100
+        slider.isContinuous = true
+        slider.tintColor = .systemMint
+        slider.thumbTintColor = .systemPurple
+        return slider
     }
 }

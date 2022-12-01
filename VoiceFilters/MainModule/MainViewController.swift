@@ -104,12 +104,7 @@ final class MainViewController: AVPlayerViewController {
         return picker
     }()
     
-    private lazy var sliderContainer: UIView = {
-        let view = UIView()
-        view.backgroundColor = .white.withAlphaComponent(0.5)
-        view.layer.cornerRadius = 20
-        return view
-    }()
+    private lazy var sliderContainer = UIView()
     
     private var slider: UISlider?
     
@@ -145,13 +140,16 @@ final class MainViewController: AVPlayerViewController {
     }
     
     private func reset() {
-        UIView.animate(withDuration: 0.5, delay: 0) {
+        self.bottomControlsStack.transform = .identity
+        UIView.animate(withDuration: 0.5, delay: 0, options: .curveEaseIn) {
+            self.bottomControlsStack.transform = CGAffineTransform(translationX: 0, y: 200)
             self.bottomControlsStack.alpha = 0
         } completion: { _ in
             self.presenter.reset()
             self.player = nil
             self.removeSliderContainerIfNeeded()
             self.bottomControlsStack.alpha = 1
+            self.bottomControlsStack.transform = .identity
         }
     }
     
@@ -261,11 +259,7 @@ extension MainViewController {
         activityIndicator.color = .white
         view.backgroundColor = .darkGray
         
-        [filterBtnsStack, pickerBtnsStack, bottomControlsStack, activityIndicator]
-            .forEach {
-                view.addSubview($0)
-                $0.translatesAutoresizingMaskIntoConstraints = false
-            }
+        view.addAutolayoutSubviews(filterBtnsStack, pickerBtnsStack, bottomControlsStack, activityIndicator)
         
         let filters = presenter.getFiltersNames()
         filters.forEach { filter in
@@ -306,19 +300,21 @@ extension MainViewController {
     }
     
     private func layoutSliderContainer(with button: UIButton) {
-        view.addSubview(sliderContainer)
-        sliderContainer.translatesAutoresizingMaskIntoConstraints = false
+        sliderContainer.layer.cornerRadius = 16
+        sliderContainer.backgroundColor = .white.withAlphaComponent(0.5)
+        
+        view.addAutolayoutSubview(sliderContainer)
         NSLayoutConstraint.activate([
             sliderContainer.leadingAnchor.constraint(equalTo: button.trailingAnchor, constant: 20),
             sliderContainer.centerYAnchor.constraint(equalTo: button.centerYAnchor),
             sliderContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            sliderContainer.heightAnchor.constraint(equalTo: button.heightAnchor, multiplier: 0.8)
+            sliderContainer.heightAnchor.constraint(equalToConstant: 32)
         ])
         view.layoutIfNeeded()
         
         sliderContainer.transform = CGAffineTransform(translationX: 400, y: 0)
         sliderContainer.alpha = 0
-        UIView.animate(withDuration: 0.6, delay: 0, usingSpringWithDamping: 0.9, initialSpringVelocity: 15, options: .curveLinear) {
+        UIView.animate(withDuration: 0.3, delay: 0, usingSpringWithDamping: 0.9, initialSpringVelocity: 25, options: .curveEaseOut) {
             self.sliderContainer.transform = .identity
             self.sliderContainer.alpha = 1
         }
@@ -392,9 +388,23 @@ extension MainViewController {
         let slider = UISlider()
         slider.minimumValue = 0
         slider.maximumValue = 100
-        slider.isContinuous = true
-        slider.tintColor = .systemMint
-        slider.thumbTintColor = .systemPurple
+        slider.tintColor = .white
+        slider.setThumbImage(UIImage.makeCircleWith(size: .init(width: 12, height: 12), backgroundColor: .white), for: .normal)
         return slider
+    }
+}
+
+extension UIImage {
+    static func makeCircleWith(size: CGSize, backgroundColor: UIColor) -> UIImage? {
+        UIGraphicsBeginImageContextWithOptions(size, false, 0.0)
+        let context = UIGraphicsGetCurrentContext()
+        context?.setFillColor(backgroundColor.cgColor)
+        context?.setStrokeColor(UIColor.clear.cgColor)
+        let bounds = CGRect(origin: .zero, size: size)
+        context?.addEllipse(in: bounds)
+        context?.drawPath(using: .fill)
+        let image = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        return image
     }
 }

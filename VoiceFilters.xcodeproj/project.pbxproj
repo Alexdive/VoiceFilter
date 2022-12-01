@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		0D839C3C29310C6600C1C2AC /* UIControl+action.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D839C3A29310C6600C1C2AC /* UIControl+action.swift */; };
 		0D839C3D29310C6600C1C2AC /* UIImage+configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D839C3B29310C6600C1C2AC /* UIImage+configuration.swift */; };
+		0D839C402937C1EC00C1C2AC /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D839C3F2937C1EC00C1C2AC /* Models.swift */; };
+		0D839C422937C29C00C1C2AC /* UIView+constraints.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D839C412937C29C00C1C2AC /* UIView+constraints.swift */; };
 		0DC45E88292E4007000C366A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC45E87292E4007000C366A /* AppDelegate.swift */; };
 		0DC45E8A292E4007000C366A /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC45E89292E4007000C366A /* SceneDelegate.swift */; };
 		0DC45E8C292E4007000C366A /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC45E8B292E4007000C366A /* MainViewController.swift */; };
@@ -21,6 +23,8 @@
 /* Begin PBXFileReference section */
 		0D839C3A29310C6600C1C2AC /* UIControl+action.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIControl+action.swift"; sourceTree = "<group>"; };
 		0D839C3B29310C6600C1C2AC /* UIImage+configuration.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIImage+configuration.swift"; sourceTree = "<group>"; };
+		0D839C3F2937C1EC00C1C2AC /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		0D839C412937C29C00C1C2AC /* UIView+constraints.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIView+constraints.swift"; sourceTree = "<group>"; };
 		0DC45E84292E4007000C366A /* VoiceFilters.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VoiceFilters.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0DC45E87292E4007000C366A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		0DC45E89292E4007000C366A /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -48,6 +52,7 @@
 			children = (
 				0D839C3A29310C6600C1C2AC /* UIControl+action.swift */,
 				0D839C3B29310C6600C1C2AC /* UIImage+configuration.swift */,
+				0D839C412937C29C00C1C2AC /* UIView+constraints.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -80,6 +85,7 @@
 		0DC45E86292E4007000C366A /* VoiceFilters */ = {
 			isa = PBXGroup;
 			children = (
+				0D839C3F2937C1EC00C1C2AC /* Models.swift */,
 				0D839C3E29310C6F00C1C2AC /* MainModule */,
 				0DC45E9B292E414F000C366A /* Common */,
 				0DC45E9C292E41FA000C366A /* AV Service */,
@@ -181,9 +187,11 @@
 				0DC45E8C292E4007000C366A /* MainViewController.swift in Sources */,
 				0DC45E88292E4007000C366A /* AppDelegate.swift in Sources */,
 				0DC45E9E292E4225000C366A /* AVService.swift in Sources */,
+				0D839C402937C1EC00C1C2AC /* Models.swift in Sources */,
 				0DC45EA0292E5D49000C366A /* MainViewPresenter.swift in Sources */,
 				0D839C3D29310C6600C1C2AC /* UIImage+configuration.swift in Sources */,
 				0DC45E8A292E4007000C366A /* SceneDelegate.swift in Sources */,
+				0D839C422937C29C00C1C2AC /* UIView+constraints.swift in Sources */,
 				0D839C3C29310C6600C1C2AC /* UIControl+action.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

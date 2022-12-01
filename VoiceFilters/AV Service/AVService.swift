@@ -16,10 +16,10 @@ protocol AVServiceProtocol {
     func prepareVideoForShare(videoUrl: URL, completion: @escaping (URL) -> Void)
     func restart()
     func resetEffects()
-    func applyLowPitchFilter()
-    func applyAlienFilter()
-    func applyHighPitchFilter()
-    func applyReverbFilter()
+    func applyLowPitchFilter(multiplier: Float)
+    func applyAlienFilter(multiplier: Float)
+    func applyHighPitchFilter(multiplier: Float)
+    func applyReverbFilter(multiplier: Float)
 }
 
 final class AVService: AVServiceProtocol {
@@ -41,20 +41,20 @@ final class AVService: AVServiceProtocol {
     
     // Public methods
     func prepareVideoForShare(videoUrl: URL, completion: @escaping (URL) -> Void) {
-        guard let editedVideoURL = editedVideoURL else {
-            prepareEditedVideo(videoUrl: videoUrl) { [weak self] outputURL in
-                guard let self = self else { return }
+        if let editedVideoURL {
+            completion(editedVideoURL)
+        } else {
+            prepareEditedVideo(videoUrl: videoUrl) { [unowned self] outputURL in
                 self.editedVideoURL = outputURL
                 completion(outputURL)
             }
-            return
         }
-        completion(editedVideoURL)
     }
     
     func restart() {
         editedVideoURL = nil
-        resetEffects()
+        audioFile = nil
+        extractedAudioUrl = nil
         engine?.stop()
         audioPlayer?.stop()
     }
@@ -65,21 +65,27 @@ final class AVService: AVServiceProtocol {
         pitchControl.pitch = 0
     }
     
-    func applyLowPitchFilter() {
-        pitchControl.pitch = -1000
+    func applyLowPitchFilter(multiplier: Float = 50) {
+        let maxMultiplier: Float = 100
+        let changePerMultiplier = -2400 / maxMultiplier
+        
+        pitchControl.pitch = multiplier * changePerMultiplier
     }
     
-    func applyAlienFilter() {
-        distortion.wetDryMix = 10
-        distortion.loadFactoryPreset(.speechAlienChatter)
+    func applyAlienFilter(multiplier: Float = 10) {
+        distortion.loadFactoryPreset(.speechCosmicInterference)
+        distortion.wetDryMix = multiplier
     }
     
-    func applyHighPitchFilter() {
-        pitchControl.pitch = 1000
+    func applyHighPitchFilter(multiplier: Float = 50) {
+        let maxMultiplier: Float = 100
+        let changePerMultiplier = 2400 / maxMultiplier
+        
+        pitchControl.pitch = multiplier * changePerMultiplier
     }
     
-    func applyReverbFilter() {
-        reverb.wetDryMix = 50
+    func applyReverbFilter(multiplier: Float = 50) {
+        reverb.wetDryMix = multiplier
         reverb.loadFactoryPreset(.cathedral)
     }
     
@@ -95,34 +101,32 @@ final class AVService: AVServiceProtocol {
     }
     
     func startPlayback(videoUrl: URL) {
+        if engine?.isRunning == false || engine == nil {
+            prepareEngine()
+        }
         if let audioUrl = extractedAudioUrl {
             playSeparateStreams(audioUrl: audioUrl, videoUrl: videoUrl)
-        }
-        getAudioURL(from: videoUrl) { [weak self] audioUrl in
-            guard let self = self,
-                  let audioUrl = audioUrl else { return }
-            
-            self.playSeparateStreams(audioUrl: audioUrl, videoUrl: videoUrl)
+        } else {
+            getAudioURL(from: videoUrl) { [unowned self] audioUrl in
+                guard let audioUrl else { return }
+                self.playSeparateStreams(audioUrl: audioUrl, videoUrl: videoUrl)
+            }
         }
     }
     
     private func playSeparateStreams(audioUrl: URL, videoUrl: URL) {
-        try? self.prepareEngine(url: audioUrl)
-        try? self.engine?.start()
+        try? prepareAudioPlayer(url: audioUrl)
         
-        self.audioPlayer?.play()
-        self.playVideo?(videoUrl)
+        audioPlayer?.play()
+        playVideo?(videoUrl)
     }
     
     private func getAudioURL(from videoURL: URL, completion: @escaping (URL?) -> Void)  {
         let composition = AVMutableComposition()
         do {
             let asset = AVURLAsset(url: videoURL)
-            guard let audioAssetTrack = asset.tracks(withMediaType: AVMediaType.audio).first else {
-                completion(nil)
-                return
-            }
-            guard let audioCompositionTrack = composition.addMutableTrack(withMediaType: AVMediaType.audio,
+            guard let audioAssetTrack = asset.tracks(withMediaType: AVMediaType.audio).first,
+                  let audioCompositionTrack = composition.addMutableTrack(withMediaType: AVMediaType.audio,
                                                                           preferredTrackID: kCMPersistentTrackID_Invalid) else {
                 completion(nil)
                 return
@@ -134,9 +138,7 @@ final class AVService: AVServiceProtocol {
         }
         
         let outputURL = URL(fileURLWithPath: NSTemporaryDirectory() + "extracted_audio.m4a")
-        if FileManager.default.fileExists(atPath: outputURL.path) {
-            try? FileManager.default.removeItem(atPath: outputURL.path)
-        }
+        removeFileIfExists(atUrl: outputURL)
         
         guard let exporter = AVAssetExportSession(asset: composition,
                                                   presetName: AVAssetExportPresetPassthrough) else { return }
@@ -155,29 +157,29 @@ final class AVService: AVServiceProtocol {
         engine?.stop()
         engine?.reset()
         
-        let engine = AVAudioEngine()
-        let audioPlayer = AVAudioPlayerNode()
-        self.engine = engine
-        self.audioPlayer = audioPlayer
+        engine = AVAudioEngine()
+        audioPlayer = AVAudioPlayerNode()
     }
     
-    private func prepareEngine(url: URL) throws {
+    private func prepareEngine() {
         resetEffects()
         resetAudioEngine()
         setupEngineNodes()
-        
-        let audioFile = try AVAudioFile(forReading: url)
         try? AVAudioSession.sharedInstance().setCategory(AVAudioSession.Category.playAndRecord, options: .defaultToSpeaker)
-        
+        try? engine?.start()
+    }
+    
+    private func prepareAudioPlayer(url: URL) throws {
+        let audioFile = try AVAudioFile(forReading: url)
         self.audioFile = audioFile
         audioPlayer?.scheduleFile(audioFile, at: nil)
     }
     
     private func renderAudio() -> URL? {
-        guard let audioFile = audioFile else { return nil }
-        
         resetAudioEngine()
-        guard let engine = engine,
+        
+        guard let audioFile = audioFile,
+              let engine = engine,
               let audioPlayer = audioPlayer else { return nil }
         
         setupEngineNodes()
@@ -197,10 +199,8 @@ final class AVService: AVServiceProtocol {
         
         var outputFile: AVAudioFile?
         do {
-            let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("filtered_audio.m4a")
-            if FileManager.default.fileExists(atPath: url.path) {
-                try? FileManager.default.removeItem(at: url)
-            }
+            guard let url = createDocumentUrlFor(path: "filtered_audio.m4a") else { return nil }
+           removeFileIfExists(atUrl: url)
             
             let recordSettings = audioFile.fileFormat.settings
             
@@ -209,11 +209,8 @@ final class AVService: AVServiceProtocol {
             return nil
         }
         
-        
-        let outputBuffer = AVAudioPCMBuffer(
-            pcmFormat: engine.manualRenderingFormat,
-            frameCapacity: engine.manualRenderingMaximumFrameCount
-        )!
+        guard let outputBuffer = AVAudioPCMBuffer(pcmFormat: engine.manualRenderingFormat,
+                                                  frameCapacity: engine.manualRenderingMaximumFrameCount) else { return nil }
         
         while engine.manualRenderingSampleTime < audioFile.length {
             let remainingSamples = audioFile.length - engine.manualRenderingSampleTime
@@ -233,14 +230,14 @@ final class AVService: AVServiceProtocol {
             }
         }
         
-        let newURL = outputFile?.url
-        outputFile = nil
+        defer {
+            outputFile = nil
+            audioPlayer.stop()
+            engine.stop()
+            engine.disableManualRenderingMode()
+        }
         
-        audioPlayer.stop()
-        engine.stop()
-        engine.disableManualRenderingMode()
-        
-        return newURL
+        return outputFile?.url
     }
     
     func mergeVideoAndAudio(videoUrl: URL, audioUrl: URL, completion: @escaping (URL) -> Void) {
@@ -280,14 +277,8 @@ final class AVService: AVServiceProtocol {
                                     of: aAudioAssetTrack,
                                     at: CMTime.zero)
         
-        guard let documentDirectory = FileManager.default.urls(for: .documentDirectory,
-                                                               in: .userDomainMask).first else { return }
-        
-        let outputURL = documentDirectory.appendingPathComponent("merged_video.mov")
-        
-        if FileManager.default.fileExists(atPath: outputURL.path) {
-            try? FileManager.default.removeItem(atPath: outputURL.path)
-        }
+        guard let outputURL = createDocumentUrlFor(path: "merged_video.mov") else { return }
+        removeFileIfExists(atUrl: outputURL)
         
         guard let exporter = AVAssetExportSession(asset: mixComposition,
                                                   presetName: AVAssetExportPresetHighestQuality)
@@ -304,6 +295,17 @@ final class AVService: AVServiceProtocol {
         }
     }
     
+    func createDocumentUrlFor(path: String) -> URL? {
+        FileManager.default.urls(for: .documentDirectory,
+                                 in: .userDomainMask).first?.appendingPathComponent(path)
+    }
+    
+    func removeFileIfExists(atUrl url: URL) {
+        if FileManager.default.fileExists(atPath: url.path) {
+            try? FileManager.default.removeItem(atPath: url.path)
+        }
+    }
+    
     private func setupEngineNodes() {
         guard let engine = engine,
               let audioPlayer = audioPlayer else { return }
@@ -312,11 +314,10 @@ final class AVService: AVServiceProtocol {
         nodes.forEach { engine.attach($0) }
         
         for i in 0..<nodes.count {
-            guard i < nodes.count - 1 else {
-                engine.connect(nodes[i], to: engine.mainMixerNode, format: nil)
-                continue
-            }
-            engine.connect(nodes[i], to: nodes[i + 1], format: nil)
+            let isLast = i == nodes.count - 1
+            engine.connect(nodes[i],
+                           to: isLast ? engine.mainMixerNode : nodes[i + 1],
+                           format: nil)
         }
     }
 }

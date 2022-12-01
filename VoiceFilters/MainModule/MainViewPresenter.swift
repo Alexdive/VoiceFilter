@@ -7,10 +7,6 @@
 
 import UIKit
 
-enum VoiceFilter: CaseIterable {
-    case highPitch, lowPitch, alien, reverb, none
-}
-
 protocol PresenterOutput: AnyObject {
     func playVideo(with url: URL)
     func pause()
@@ -20,9 +16,11 @@ protocol PresenterOutput: AnyObject {
 }
 
 protocol MainPresenterInput {
+    var filt: [FilterName: VoiceFilter] { get }
+    var filters: [VoiceFilter] { get }
     var delegate: PresenterOutput? { get set }
     var currentVideo: URL? { get }
-    var selectedFilter: VoiceFilter? { get set }
+    var selectedFilter: FilterName? { get set }
     var isLooped: Bool { get }
     
     func tappedLoopBtn()
@@ -31,9 +29,14 @@ protocol MainPresenterInput {
     func didRecordVideo(_ url: URL)
     func didSelectVideo(_ url: URL)
     func didTapShareVideo()
+    func updateFilter(_ filter: VoiceFilter)
 }
 
 final class MainViewPresenter: MainPresenterInput {
+    
+    private(set) var filters: [VoiceFilter] = [.highPitch, .lowPitch, .alien, .reverb, .none]
+    
+    private(set) lazy var filt: [FilterName: VoiceFilter] = Dictionary(uniqueKeysWithValues: filters.map { ($0.name, $0) })
     
     weak var delegate: PresenterOutput?
     private var avService: AVServiceProtocol
@@ -41,9 +44,13 @@ final class MainViewPresenter: MainPresenterInput {
     init(avService: AVService) {
         self.avService = avService
         self.avService.playVideo = { [weak self] url in
-            self?.delegate?.playVideo(with: url)
-            self?.selectedFilter = VoiceFilter.none
-            self?.delegate?.updateViews(hasSelectedVideo: true)
+            guard let self else { return }
+            self.delegate?.playVideo(with: url)
+            self.selectedFilter = FilterName.none
+            if self.isLooped == true {
+                self.selectedFilter = self.replayFilter
+            }
+            self.delegate?.updateViews(hasSelectedVideo: true)
         }
         
         NotificationCenter.default.addObserver(
@@ -66,26 +73,37 @@ final class MainViewPresenter: MainPresenterInput {
         }
     }
     
-    var selectedFilter: VoiceFilter? {
+    var selectedFilter: FilterName? {
         didSet {
-            guard let filter = selectedFilter,
-                  filter != oldValue else { return }
+            guard let filterName = selectedFilter,
+                  let filter = filt[filterName]
+            else { return }
             avService.resetEffects()
-            switch filter {
-            case .lowPitch:
-                avService.applyLowPitchFilter()
-            case .alien:
-                avService.applyAlienFilter()
+            
+            switch filter.name {
             case .highPitch:
-                avService.applyHighPitchFilter()
+                avService.applyHighPitchFilter(multiplier: filter.currentLevel)
+            case .lowPitch:
+                avService.applyLowPitchFilter(multiplier: filter.currentLevel)
+            case .alien:
+                avService.applyAlienFilter(multiplier: filter.currentLevel)
             case .reverb:
-                avService.applyReverbFilter()
+                avService.applyReverbFilter(multiplier: filter.currentLevel)
             case .none:
                 selectedFilter = nil
+                return
+            default:
                 return
             }
         }
     }
+    
+    func updateFilter(_ filter: VoiceFilter) {
+        filt[filter.name] = filter
+        selectedFilter = filter.name
+    }
+    
+    var replayFilter: FilterName?
     
     private(set) var isLooped: Bool = true {
         didSet {
@@ -102,6 +120,7 @@ final class MainViewPresenter: MainPresenterInput {
     }
     
     func replay() {
+        replayFilter = selectedFilter
         avService.audioPlayer?.stop()
         if let url = currentVideo, isLooped {
             avService.startPlayback(videoUrl: url)
@@ -109,9 +128,10 @@ final class MainViewPresenter: MainPresenterInput {
     }
     
     func restart() {
-        selectedFilter = nil
+        selectedFilter = FilterName.none
         currentVideo = nil
         avService.restart()
+        delegate?.updateViews(hasSelectedVideo: false)
     }
     
     func didRecordVideo(_ url: URL) {

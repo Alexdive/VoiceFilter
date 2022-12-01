@@ -24,7 +24,7 @@ final class MainViewController: AVPlayerViewController {
     
     private lazy var recordVideoBtn: UIButton = {
         var button = makeButton(withImageName: "record.circle", tintColor: .systemRed)
-        button.addAction { [unowned self] _ in
+        button.addAction { [unowned self] in
             self.presentPicker(for: .camera)
         }
         return button
@@ -32,7 +32,7 @@ final class MainViewController: AVPlayerViewController {
     
     private lazy var pickVideoBtn: UIButton = {
         var button = makeButton(withImageName: "folder", tintColor: .systemPurple)
-        button.addAction { [unowned self] _ in
+        button.addAction { [unowned self] in
             self.presentPicker(for: .photoLibrary)
         }
         return button
@@ -40,7 +40,7 @@ final class MainViewController: AVPlayerViewController {
     
     private lazy var shareVideoBtn: UIButton = {
         var button = makeButton(withImageName: "square.and.arrow.up.circle", tintColor: .systemPurple)
-        button.addAction { [unowned self] _ in
+        button.addAction { [unowned self] in
             self.presenter.didTapShareVideo()
             self.activityIndicator.startAnimating()
         }
@@ -49,7 +49,7 @@ final class MainViewController: AVPlayerViewController {
     
     private lazy var resetVideoBtn: UIButton = {
         var button = makeButton(withImageName: "arrow.uturn.backward.circle", tintColor: .systemRed)
-        button.addAction { [unowned self] _ in
+        button.addAction { [unowned self] in
             self.reset()
         }
         return button
@@ -57,7 +57,7 @@ final class MainViewController: AVPlayerViewController {
     
     private lazy var loopBtn: UIButton = {
         var button = makeButton(withImageName: "infinity.circle", tintColor: .systemPurple, selectedImage: "infinity.circle.fill")
-        button.addAction { [unowned self] _ in
+        button.addAction { [unowned self] in
             self.presenter.tappedLoopBtn()
         }
         return button
@@ -145,8 +145,9 @@ final class MainViewController: AVPlayerViewController {
     }
     
     private func reset() {
-        self.presenter.reset()
-        self.player = nil
+        presenter.reset()
+        player = nil
+        removeSliderContainerIfNeeded()
     }
     
     private func shareWithActivityVC(url: URL) {
@@ -166,7 +167,7 @@ final class MainViewController: AVPlayerViewController {
     
     private func setupGestureRecognizers() {
         let tap = UITapGestureRecognizer()
-        tap.addTarget { [unowned self] in
+        tap.addAction { [unowned self] in
             self.removeSliderContainerIfNeeded()
         }
         view.addGestureRecognizer(tap)
@@ -176,7 +177,7 @@ final class MainViewController: AVPlayerViewController {
             .forEach { filterName, button in
                 let longTap = UILongPressGestureRecognizer()
                 button.addGestureRecognizer(longTap)
-                longTap.addTarget() { [unowned self] in
+                longTap.addAction { [unowned self] in
                     if longTap.state == .began {
                         self.showSlider(filterName: filterName)
                         self.didSelect(filterName: filterName)
@@ -318,7 +319,7 @@ extension MainViewController {
         guard let slider else { return }
         slider.value = filter.level
         
-        slider.addAction(for: .valueChanged) { [unowned self] _ in
+        slider.addAction(for: .valueChanged) { [unowned self] in
             filter.level = slider.value
             presenter.updateFilter(filter)
         }
@@ -352,7 +353,7 @@ extension MainViewController {
         button.setImage(voiceFilter.image, for: .normal)
         button.setImage(voiceFilter.selectedImage, for: .selected)
         button.tintColor = .systemMint
-        button.addAction { [unowned self] _ in
+        button.addAction { [unowned self] in
             self.didSelect(filterName: filterName)
         }
         return button

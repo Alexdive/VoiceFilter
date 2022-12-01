@@ -159,7 +159,7 @@ final class MainViewPresenter: MainPresenterInput {
     }
     
     func didTapShareVideo() {
-        guard let currentVideo = currentVideo else { return }
+        guard let currentVideo else { return }
         delegate?.pause()
         avService.prepareVideoForShare(videoUrl: currentVideo) { [weak self] outputURL in
             self?.delegate?.shareVideo(with: outputURL)

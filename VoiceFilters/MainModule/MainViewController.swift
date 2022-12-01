@@ -145,9 +145,14 @@ final class MainViewController: AVPlayerViewController {
     }
     
     private func reset() {
-        presenter.reset()
-        player = nil
-        removeSliderContainerIfNeeded()
+        UIView.animate(withDuration: 0.5, delay: 0) {
+            self.bottomControlsStack.alpha = 0
+        } completion: { _ in
+            self.presenter.reset()
+            self.player = nil
+            self.removeSliderContainerIfNeeded()
+            self.bottomControlsStack.alpha = 1
+        }
     }
     
     private func shareWithActivityVC(url: URL) {
@@ -234,8 +239,12 @@ extension MainViewController: PresenterOutput {
     }
     
     func playVideo(with url: URL) {
-        player = AVPlayer(url: url)
-        player?.isMuted = true
+        if player == nil {
+            player = AVPlayer(url: url)
+            player?.isMuted = true
+        } else {
+            player?.replaceCurrentItem(with: AVPlayerItem(url: url))
+        }
         player?.play()
     }
     
@@ -306,6 +315,13 @@ extension MainViewController {
             sliderContainer.heightAnchor.constraint(equalTo: button.heightAnchor, multiplier: 0.8)
         ])
         view.layoutIfNeeded()
+        
+        sliderContainer.transform = CGAffineTransform(translationX: 400, y: 0)
+        sliderContainer.alpha = 0
+        UIView.animate(withDuration: 0.6, delay: 0, usingSpringWithDamping: 0.9, initialSpringVelocity: 15, options: .curveLinear) {
+            self.sliderContainer.transform = .identity
+            self.sliderContainer.alpha = 1
+        }
     }
     
     private func showSlider(filterName: FilterName) {

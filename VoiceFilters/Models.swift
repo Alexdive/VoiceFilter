@@ -30,18 +30,13 @@ extension FilterName {
 }
 
 struct VoiceFilter: Hashable {
-    var name: FilterName
+    let name: FilterName
     
-    private var level: Float = 0
-    
-    var currentLevel: Float {
-        get { level }
-        set(newValue) { level = newValue }
-    }
+    var level: Float
     
     init(name: FilterName, level: Float) {
         self.name = name
-        self.currentLevel = level
+        self.level = level
     }
 }
 

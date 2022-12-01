@@ -16,10 +16,10 @@ protocol AVServiceProtocol {
     func prepareVideoForShare(videoUrl: URL, completion: @escaping (URL) -> Void)
     func restart()
     func resetEffects()
-    func applyLowPitchFilter(multiplier: Float)
-    func applyAlienFilter(multiplier: Float)
-    func applyHighPitchFilter(multiplier: Float)
-    func applyReverbFilter(multiplier: Float)
+    func applyLowPitchFilter(level: Float)
+    func applyAlienFilter(level: Float)
+    func applyHighPitchFilter(level: Float)
+    func applyReverbFilter(level: Float)
 }
 
 final class AVService: AVServiceProtocol {
@@ -65,27 +65,27 @@ final class AVService: AVServiceProtocol {
         pitchControl.pitch = 0
     }
     
-    func applyLowPitchFilter(multiplier: Float = 50) {
+    func applyLowPitchFilter(level: Float = 50) {
         let maxMultiplier: Float = 100
         let changePerMultiplier = -2400 / maxMultiplier
         
-        pitchControl.pitch = multiplier * changePerMultiplier
+        pitchControl.pitch = level * changePerMultiplier
     }
     
-    func applyAlienFilter(multiplier: Float = 10) {
+    func applyAlienFilter(level: Float = 10) {
         distortion.loadFactoryPreset(.speechCosmicInterference)
-        distortion.wetDryMix = multiplier
+        distortion.wetDryMix = level
     }
     
-    func applyHighPitchFilter(multiplier: Float = 50) {
+    func applyHighPitchFilter(level: Float = 50) {
         let maxMultiplier: Float = 100
         let changePerMultiplier = 2400 / maxMultiplier
         
-        pitchControl.pitch = multiplier * changePerMultiplier
+        pitchControl.pitch = level * changePerMultiplier
     }
     
-    func applyReverbFilter(multiplier: Float = 50) {
-        reverb.wetDryMix = multiplier
+    func applyReverbFilter(level: Float = 50) {
+        reverb.wetDryMix = level
         reverb.loadFactoryPreset(.cathedral)
     }
     
